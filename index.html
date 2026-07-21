@@ -528,8 +528,14 @@ function limparFiltroMes(){
 }
 
 function renderGraficos(){
+  // Se houver filtro de mês, os gráficos mostram apenas aquele mês
+  let dadosFiltrados = {};
+  for(let c in D){
+    dadosFiltrados[c] = mesFiltro ? D[c].filter(i => gk(i.d) === mesFiltro) : D[c];
+  }
+
   let catVal={};
-  for(let c in D){if(c!=='entradas'){catVal[CATNOME[c]]=D[c].reduce((s,i)=>s+i.v,0);}}
+  for(let c in dadosFiltrados){if(c!=='entradas'){catVal[CATNOME[c]]=dadosFiltrados[c].reduce((s,i)=>s+i.v,0);}}
   let catLabels=Object.keys(catVal),catData=Object.values(catVal),catColors=catLabels.map(l=>{let k=Object.keys(CATNOME).find(k=>CATNOME[k]===l);return CATCORES[k];});
   if(charts.categorias)charts.categorias.destroy();
   charts.categorias=new Chart(document.getElementById('chart-categorias'),{
@@ -539,8 +545,8 @@ function renderGraficos(){
   });
 
   let meses={};
-  for(let c in D){
-    D[c].forEach(i=>{let k=gk(i.d);if(!meses[k])meses[k]={ent:0,sai:0};if(c==='entradas')meses[k].ent+=i.v;else meses[k].sai+=i.v;});
+  for(let c in dadosFiltrados){
+    dadosFiltrados[c].forEach(i=>{let k=gk(i.d);if(!meses[k])meses[k]={ent:0,sai:0};if(c==='entradas')meses[k].ent+=i.v;else meses[k].sai+=i.v;});
   }
   let ordem=Object.keys(meses).sort();
   let lbls=ordem.map(k=>M[parseInt(k.split('-')[1])]+'/'+k.split('-')[0]);
@@ -558,8 +564,8 @@ function renderGraficos(){
   });
 
   let pgVal={};
-  for(let c in D){if(c!=='entradas'&&c!=='dizimo'){
-    D[c].forEach(i=>{if(i.pg){if(!pgVal[PN[i.pg]])pgVal[PN[i.pg]]=0;pgVal[PN[i.pg]]+=i.v;}});
+  for(let c in dadosFiltrados){if(c!=='entradas'&&c!=='dizimo'){
+    dadosFiltrados[c].forEach(i=>{if(i.pg){if(!pgVal[PN[i.pg]])pgVal[PN[i.pg]]=0;pgVal[PN[i.pg]]+=i.v;}});
   }}
   let pgLabels=Object.keys(pgVal),pgData=Object.values(pgVal),pgColors=pgLabels.map(l=>{let k=Object.keys(PN).find(k=>PN[k]===l);return PCOR[k];});
 
