@@ -313,6 +313,7 @@ header p{color:#9ca3af;font-size:14px;margin-top:4px}
 <script>
 // ============ FIREBASE INTEGRATION ============
 let db = null, firestore = null, dbReady = false, unsubscribe = null;
+let firebaseTentativas = 0;
 
 function initFirebase() {
   if (window.db && window.firestore) {
@@ -320,9 +321,23 @@ function initFirebase() {
     firestore = window.firestore;
     carregarDados();
   } else {
-    window.addEventListener('firebase-ready', initFirebase);
+    firebaseTentativas++;
+    if (firebaseTentativas < 50) {
+      setTimeout(initFirebase, 100);
+    } else {
+      console.error('Firebase não disponível após 5 segundos');
+      atualizarSync('offline', 'Firebase indisponível');
+      toast('❌ Firebase não carregou. Verifique sua conexão.');
+      // Inicializar com dados vazios para não travar a interface
+      ct(); rt(); renderFechamentoMensal(); renderGraficos();
+    }
   }
 }
+
+// Também escutar o evento como fallback
+window.addEventListener('firebase-ready', function() {
+  if (!dbReady) initFirebase();
+});
 
 async function carregarDados() {
   atualizarSync('syncing', 'Sincronizando...');
