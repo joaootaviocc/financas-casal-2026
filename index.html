@@ -447,7 +447,10 @@ function atualizaCorSelect(sel){sel.className='';if(sel.value)sel.classList.add(
 
 function ct(){
 let e=0,s=0;
-for(let c in D){D[c].forEach(i=>{if(c==='entradas')e+=i.v;else s+=i.v;});}
+for(let c in D){
+  let items=mesFiltro?D[c].filter(i=>gk(i.d)===mesFiltro):D[c];
+  items.forEach(i=>{if(c==='entradas')e+=i.v;else s+=i.v;});
+}
 document.getElementById('te').textContent=fm(e);
 document.getElementById('ts').textContent=fm(s);
 let sl=e-s;
@@ -470,7 +473,8 @@ function renderFechamentoMensal(){
   ordem.forEach(k=>{
     let m=M[parseInt(k.split('-')[1])]+' '+k.split('-')[0];
     let ent=meses[k].ent,sai=meses[k].sai,sl=ent-sai;
-    html+=`<div class="fechamento-card" data-mes="${k}" onclick="filtrarPorMes('${k}')">
+    let ativoClass=mesFiltro===k?' ativo':'';
+    html+=`<div class="fechamento-card${ativoClass}" data-mes="${k}" ondblclick="filtrarPorMes('${k}')">
       <div class="fechamento-mes">${m}</div>
       <div class="fechamento-linhas">
         <div class="fechamento-linha entr"><span>Entradas</span><span class="fechamento-valor">${fm(ent)}</span></div>
@@ -484,21 +488,25 @@ function renderFechamentoMensal(){
 }
 
 function filtrarPorMes(mes){
+  if(mesFiltro===mes){
+    limparFiltroMes();
+    return;
+  }
+  mesFiltro=mes;
   document.querySelectorAll('.fechamento-card').forEach(c=>c.classList.remove('ativo'));
   let ativo=document.querySelector(`.fechamento-card[data-mes="${mes}"]`);
   if(ativo)ativo.classList.add('ativo');
-  let I=D[T]||[];
-  if(!I.length)return;
-  let filtrados=I.filter(i=>gk(i.d)===mes);
-  let c=document.getElementById('tc');
-  if(!filtrados.length){c.innerHTML='<div class="vazio">Nenhum lançamento neste mês.</div>';return;}
-  let S=[...filtrados].sort((a,b)=>new Date(a.d)-new Date(b.d));
-  c.innerHTML=renderTabela(S);
-  toast('📅 Mostrando '+M[parseInt(mes.split('-')[1])]+' — dê duplo clique no mês para ver todos');
-  ativo.ondblclick=function(){
-    document.querySelectorAll('.fechamento-card').forEach(c=>c.classList.remove('ativo'));
-    rt();toast('📅 Mostrando todos os lançamentos');
-  };
+  document.getElementById('btn-limpar-filtro').style.display='inline-block';
+  ct();rt();renderGraficos();
+  toast('📅 Mostrando '+M[parseInt(mes.split('-')[1])]+'/'+mes.split('-')[0]+' — clique novamente para ver todos');
+}
+
+function limparFiltroMes(){
+  mesFiltro=null;
+  document.querySelectorAll('.fechamento-card').forEach(c=>c.classList.remove('ativo'));
+  document.getElementById('btn-limpar-filtro').style.display='none';
+  ct();rt();renderGraficos();
+  toast('📅 Mostrando todos os meses');
 }
 
 function renderGraficos(){
@@ -564,13 +572,62 @@ let fdc=document.getElementById('fdc'),fpar=document.getElementById('fpar'),fpg=
 if(T==='fatura_cartao')fpar.classList.remove('hidden');else fpar.classList.add('hidden');
 if(T==='entradas'||T==='dizimo')fpg.classList.add('hidden');else fpg.classList.remove('hidden');
 if(T==='mercado'||T==='gasolina')fdc.classList.add('hidden');else fdc.classList.remove('hidden');
+if(mesFiltro)renderFechamentoMensal();
 }
 
 function rt(){
-let c=document.getElementById('tc'),I=D[T]||[];
+let c=document.getElementById('tc');
+if(mesFiltro){
+  let todasCats=['entradas','dizimo','mercado','lazer','gasolina','salao','contas_fixas','contas_extras','fatura_cartao'];
+  let todos=[];
+  todasCats.forEach(cat=>{
+    (D[cat]||[]).forEach(item=>{
+      if(gk(item.d)===mesFiltro){
+        todos.push({...item,cat:cat});
+      }
+    });
+  });
+  if(!todos.length){c.innerHTML='<div class="vazio">Nenhum lançamento neste mês.</div>';return;}
+  let S=[...todos].sort((a,b)=>new Date(a.d)-new Date(b.d));
+  c.innerHTML=renderTabelaMes(S);
+  return;
+}
+let I=D[T]||[];
 if(!I.length){c.innerHTML='<div class="vazio">Nenhum lançamento.</div>';return;}
 let S=[...I].sort((a,b)=>new Date(a.d)-new Date(b.d));
 c.innerHTML=renderTabela(S);
+}
+
+function renderTabelaMes(I){
+let h='<div class="secao-titulo">📅 Lançamentos de '+M[parseInt(mesFiltro.split('-')[1])]+'/'+mesFiltro.split('-')[0]+'</div>';
+h+='<div class="tabela"><div class="tabela-scroll">';
+h+='<div class="tabela-header" style="grid-template-columns:90px 1fr 100px 120px 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:center">Categoria</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
+let cm='',tmEnt=0,tmSai=0,R=[];
+I.forEach(i=>{
+  let k=gk(i.d);
+  if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),tEnt:tmEnt,tSai:tmSai});tmEnt=0;tmSai=0;}
+  cm=k;
+  if(i.cat==='entradas')tmEnt+=i.v;else tmSai+=i.v;
+  R.push({...i,f:false});
+});
+if(cm)R.push({f:true,m:gm(I[I.length-1].d),tEnt:tmEnt,tSai:tmSai});
+R.forEach(r=>{
+  if(r.f){
+    h+=`<div class="tabela-linha fechamento" style="grid-template-columns:90px 1fr 100px 120px 120px 70px"><div></div><div>Resumo ${r.m.split(' ')[0]}</div><div></div><div></div><div class="col-valor" style="color:#16a34a">${fm(r.tEnt)}</div><div></div></div>`;
+    h+=`<div class="tabela-linha fechamento" style="grid-template-columns:90px 1fr 100px 120px 120px 70px"><div></div><div></div><div></div><div></div><div class="col-valor" style="color:#dc2626">-${fm(r.tSai)}</div><div></div></div>`;
+    h+=`<div class="tabela-linha fechamento" style="grid-template-columns:90px 1fr 100px 120px 120px 70px;margin-bottom:8px"><div></div><div>Saldo</div><div></div><div></div><div class="col-valor" style="color:${r.tEnt-r.tSai>=0?'#16a34a':'#dc2626'};font-weight:800">${fm(r.tEnt-r.tSai)}</div><div></div></div>`;
+  } else {
+    let catEmoji={entradas:'💰',dizimo:'⛪',mercado:'🛒',lazer:'🎉',gasolina:'⛽',salao:'💇',contas_fixas:'📋',contas_extras:'📦',fatura_cartao:'💳'};
+    let catNome={entradas:'Entrada',dizimo:'Dízimo',mercado:'Mercado',lazer:'Lazer',gasolina:'Gasolina',salao:'Salão',contas_fixas:'Fixas',contas_extras:'Extras',fatura_cartao:'Fatura'};
+    let pc=r.pg?P[r.pg]:'';
+    let pn=r.pg?PN[r.pg]:'';
+    let desc=r.desc||'-';
+    let cor=r.cat==='entradas'?'#2563eb':'#dc2626';
+    let sinal=r.cat==='entradas'?'':'-';
+    h+=`<div class="tabela-linha" style="grid-template-columns:90px 1fr 100px 120px 120px 70px"><div>${fd(r.d)}</div><div class="col-desc">${desc}</div><div class="col-pagamento" style="font-size:11px;text-align:center">${catEmoji[r.cat]||''} ${catNome[r.cat]||r.cat}</div><div class="col-pagamento ${pc}">${pn}</div><div class="col-valor" style="color:${cor}">${sinal}${fm(r.v)}</div><div style="display:flex;gap:4px;justify-content:center">${acoesHtml(r.id,r.cat)}</div></div>`;
+  }
+});
+return h+'</div></div>';
 }
 
 function renderTabela(I){
