@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finanças 2026 - Casal (Editável)</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCyDMJAGj8W1uP0rcpyhiXibfTWSQ9yI-0",
+    authDomain: "financas-casal-2026.firebaseapp.com",
+    projectId: "financas-casal-2026",
+    storageBucket: "financas-casal-2026.firebasestorage.app",
+    messagingSenderId: "1094183657912",
+    appId: "1:1094183657912:web:a27b2fb1b9b283ccd26f4d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window.db = db;
+  window.firestore = { doc, setDoc, getDoc, onSnapshot };
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f5f0;color:#37352f;min-height:100vh}
+.container{max-width:1100px;margin:0 auto;padding:20px}
+header{text-align:center;padding:20px 0;border-bottom:1px solid #e3e2e0;margin-bottom:20px}
+header h1{font-size:32px;font-weight:700}
+header p{color:#9ca3af;font-size:14px;margin-top:4px}
+
+.resumo{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.resumo-card{background:#fff;border-radius:8px;padding:16px;text-align:center;border:1px solid #e3e2e0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.resumo-card.saldo{border-top:3px solid #4ade80}
+.resumo-card.entrada{border-top:3px solid #3b82f6}
+.resumo-card.saida{border-top:3px solid #ef4444}
+.resumo-label{font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.resumo-valor{font-size:22px;font-weight:700}
+.resumo-card.saldo .resumo-valor{color:#16a34a}
+.resumo-card.entrada .resumo-valor{color:#2563eb}
+.resumo-card.saida .resumo-valor{color:#dc2626}
+
+.fechamento-mensal{background:#fff;border-radius:12px;padding:20px;margin-bottom:24px;border:1px solid #e3e2e0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.fechamento-titulo{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;color:#37352f}
+.fechamento-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.fechamento-card{background:#f7f6f3;border-radius:10px;padding:14px;border:1px solid #e3e2e0;transition:transform .15s,box-shadow .15s;cursor:pointer}
+.fechamento-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.fechamento-card.ativo{border:2px solid #37352f;background:#fff}
+.fechamento-mes{font-size:13px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.fechamento-linhas{display:flex;flex-direction:column;gap:4px}
+.fechamento-linha{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.fechamento-linha.entr .fechamento-valor{color:#2563eb;font-weight:600}
+.fechamento-linha.saida .fechamento-valor{color:#dc2626;font-weight:600}
+.fechamento-linha.saldo .fechamento-valor{font-weight:700;font-size:15px}
+.fechamento-linha.saldo .fechamento-valor.pos{color:#16a34a}
+.fechamento-linha.saldo .fechamento-valor.neg{color:#dc2626}
+.fechamento-sep{border-top:1px solid #e3e2e0;margin:6px 0;padding-top:4px}
+
+.graficos-secao{background:#fff;border-radius:12px;padding:20px;margin-bottom:24px;border:1px solid #e3e2e0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.graficos-titulo{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;color:#37352f}
+.graficos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.grafico-card{background:#f7f6f3;border-radius:10px;padding:16px;border:1px solid #e3e2e0}
+.grafico-titulo{font-size:13px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;text-align:center}
+.grafico-wrap{position:relative;height:260px}
+
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid #e3e2e0;overflow-x:auto;padding-bottom:1px}
+.tab{padding:10px 14px;border:none;background:transparent;color:#6b7280;font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;border-radius:4px 4px 0 0}
+.tab:hover{background:#f7f6f3;color:#37352f}
+.tab.active{color:#37352f;border-bottom-color:#37352f;font-weight:600}
+
+.legenda{background:#fff;border-radius:8px;padding:12px 16px;margin-bottom:16px;border:1px solid #e3e2e0}
+.legenda-titulo{font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.legenda-itens{display:flex;flex-wrap:wrap;gap:8px 16px}
+.legenda-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#4b5563}
+.legenda-dot{width:10px;height:10px;border-radius:3px}
+
+.form{background:#fff;border-radius:8px;padding:16px;margin-bottom:16px;border:1px solid #e3e2e0}
+.form-titulo{font-size:14px;font-weight:600;margin-bottom:12px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px;align-items:end}
+.form-field label{display:block;font-size:11px;color:#6b7280;margin-bottom:3px;font-weight:500}
+.form-field input,.form-field select{width:100%;padding:8px 10px;border-radius:6px;border:1px solid #d1d5db;background:#fff;font-size:13px;outline:none;color:#37352f}
+.form-field input:focus,.form-field select:focus{border-color:#37352f}
+
+.form-field select option.pg-cl{background:#fce7f3;color:#be185d}
+.form-field select option.pg-cj{background:#dbeafe;color:#2563eb}
+.form-field select option.pg-cv{background:#fef3c7;color:#d97706}
+.form-field select option.pg-px{background:#d1fae5;color:#059669}
+.form-field select option.pg-if{background:#ede9fe;color:#7c3aed}
+.form-field select option.pg-bl{background:#f3f4f6;color:#4b5563}
+.form-field select option.pg-mp{background:#cffafe;color:#0891b2}
+.form-field select option.pg-dh{background:#ffedd5;color:#ea580c}
+
+#fpgm.pg-cl{background:#fce7f3;border-color:#be185d;color:#be185d}
+#fpgm.pg-cj{background:#dbeafe;border-color:#2563eb;color:#2563eb}
+#fpgm.pg-cv{background:#fef3c7;border-color:#d97706;color:#d97706}
+#fpgm.pg-px{background:#d1fae5;border-color:#059669;color:#059669}
+#fpgm.pg-if{background:#ede9fe;border-color:#7c3aed;color:#7c3aed}
+#fpgm.pg-bl{background:#f3f4f6;border-color:#4b5563;color:#4b5563}
+#fpgm.pg-mp{background:#cffafe;border-color:#0891b2;color:#0891b2}
+#fpgm.pg-dh{background:#ffedd5;border-color:#ea580c;color:#ea580c}
+
+.btn-lancar{padding:10px 20px;border-radius:6px;border:none;background:#37352f;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn-lancar:hover{opacity:.85}
+
+.secao-titulo{font-size:18px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.tabela{background:#fff;border-radius:8px;border:1px solid #e3e2e0;overflow:hidden}
+.tabela-scroll{max-height:500px;overflow-y:auto}
+.tabela-header{display:grid;background:#f7f6f3;padding:10px 14px;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.3px;border-bottom:1px solid #e3e2e0}
+.tabela-linha{display:grid;padding:9px 14px;font-size:13px;border-bottom:1px solid #f0efed;align-items:center;transition:background .15s}
+.tabela-linha:hover{background:#f7f6f3}
+.tabela-linha.fechamento{background:#f0efed;font-weight:600}
+.tabela-linha.fechamento .col-valor{font-weight:700}
+.col-data{text-align:left}
+.col-desc{text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.col-parcela{text-align:center}
+.col-valor{text-align:right;font-weight:500}
+.col-pagamento{text-align:center;font-size:11px}
+.col-acoes{text-align:center;display:flex;gap:6px;justify-content:center;align-items:center}
+.btn-acao{width:26px;height:26px;border-radius:5px;border:none;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+.btn-editar{background:#dbeafe;color:#2563eb}
+.btn-editar:hover{background:#2563eb;color:#fff}
+.btn-excluir{background:#fee2e2;color:#dc2626}
+.btn-excluir:hover{background:#dc2626;color:#fff}
+.pg-cl{color:#be185d}
+.pg-cj{color:#2563eb}
+.pg-cv{color:#d97706}
+.pg-px{color:#059669}
+.pg-if{color:#7c3aed}
+.pg-bl{color:#4b5563}
+.pg-mp{color:#0891b2}
+.pg-dh{color:#ea580c}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:2000;padding:20px}
+.modal-overlay.ativo{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalIn .25s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.modal-header{padding:18px 20px;border-bottom:1px solid #e3e2e0;display:flex;justify-content:space-between;align-items:center}
+.modal-titulo{font-size:16px;font-weight:700}
+.modal-fechar{width:32px;height:32px;border-radius:8px;border:none;background:#f3f4f6;color:#6b7280;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.modal-fechar:hover{background:#e5e7eb;color:#37352f}
+.modal-body{padding:20px}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.modal-grid .form-field{margin-bottom:0}
+.modal-footer{padding:14px 20px;border-top:1px solid #e3e2e0;display:flex;justify-content:flex-end;gap:10px}
+.btn-cancelar{padding:9px 18px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#6b7280;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-cancelar:hover{background:#f3f4f6}
+.btn-salvar{padding:9px 22px;border-radius:6px;border:none;background:#37352f;color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn-salvar:hover{opacity:.85}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:#37352f;color:#fff;padding:12px 24px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:all .3s;z-index:1000}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.vazio{text-align:center;padding:40px;color:#9ca3af;font-size:13px}
+.hidden{display:none}
+
+@media(max-width:768px){
+  .resumo{grid-template-columns:1fr}
+  .fechamento-grid{grid-template-columns:1fr}
+  .graficos-grid{grid-template-columns:1fr}
+  .modal-grid{grid-template-columns:1fr}
+}
+</style>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#37352f">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💵</text></svg>">
+</head>
+<body>
+<div id="sync-indicator" style="position:fixed;top:12px;right:12px;z-index:1000;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all .3s;background:#fee2e2;color:#dc2626">
+  <span style="width:8px;height:8px;border-radius:50%;background:currentColor"></span>
+  <span>Offline</span>
+</div>
+<div class="container">
+<header><h1>💵 Finanças 2026</h1><p>Controle João e Lê 🫶</p></header>
+
+<div class="resumo">
+<div class="resumo-card entrada"><div class="resumo-label">Total Entrada</div><div class="resumo-valor" id="te">R$ 0,00</div></div>
+<div class="resumo-card saida"><div class="resumo-label">Total Saída</div><div class="resumo-valor" id="ts">R$ 0,00</div></div>
+<div class="resumo-card saldo"><div class="resumo-label">Saldo</div><div class="resumo-valor" id="sl">R$ 0,00</div></div>
+</div>
+
+<div class="fechamento-mensal">
+  <div class="fechamento-titulo">📅 Fechamento Mensal</div>
+  <div class="fechamento-grid" id="fechamento-grid"></div>
+</div>
+
+<div class="graficos-secao">
+  <div class="graficos-titulo">📊 Gráficos de Gastos</div>
+  <div class="graficos-grid">
+    <div class="grafico-card">
+      <div class="grafico-titulo">Gastos por Categoria</div>
+      <div class="grafico-wrap"><canvas id="chart-categorias"></canvas></div>
+    </div>
+    <div class="grafico-card">
+      <div class="grafico-titulo">Evolução Mensal</div>
+      <div class="grafico-wrap"><canvas id="chart-mensal"></canvas></div>
+    </div>
+    <div class="grafico-card">
+      <div class="grafico-titulo">Gastos por Forma de Pagamento</div>
+      <div class="grafico-wrap"><canvas id="chart-pagamento"></canvas></div>
+    </div>
+    <div class="grafico-card">
+      <div class="grafico-titulo">Comparativo Entrada × Saída</div>
+      <div class="grafico-wrap"><canvas id="chart-comparativo"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="legenda">
+<div class="legenda-titulo">📌 Legenda - Formas de Pagamento</div>
+<div class="legenda-itens">
+<div class="legenda-item"><span class="legenda-dot" style="background:#be185d"></span>cartão lê</div>
+<div class="legenda-item"><span class="legenda-dot" style="background:#2563eb"></span>cartão joão</div>
+<div class="legenda-item"><span class="legenda-dot" style="background:#d97706"></span>cartão virtual</div>
+<div class="legenda-item"><span class="legenda-dot" style="background:#059669"></span>pix</div>
+<div class="legenda-item"><span class="legenda-dot" style="background:#7c3aed"></span>ifood benefícios</div>
+<div class="legenda-item"><span class="legenda-dot" style="background:#4b5563"></span>boleto/débito</div>
+<div class="legenda-item"><span class="legenda-dot" style="background:#0891b2"></span>mercado pago</div>
+<div class="legenda-item"><span class="legenda-dot" style="background:#ea580c"></span>dinheiro</div>
+</div>
+</div>
+
+<div class="tabs">
+<button class="tab active" onclick="sw('entradas',this)">💰 Entradas</button>
+<button class="tab" onclick="sw('dizimo',this)">⛪ Dízimo</button>
+<button class="tab" onclick="sw('mercado',this)">🛒 Mercado</button>
+<button class="tab" onclick="sw('lazer',this)">🎉 Lazer</button>
+<button class="tab" onclick="sw('gasolina',this)">⛽ Gasolina</button>
+<button class="tab" onclick="sw('salao',this)">💇 Salão</button>
+<button class="tab" onclick="sw('contas_fixas',this)">📋 Fixas</button>
+<button class="tab" onclick="sw('contas_extras',this)">📦 Extras</button>
+<button class="tab" onclick="sw('fatura_cartao',this)">💳 Fatura</button>
+</div>
+
+<div class="form">
+<div class="form-titulo">➕ Novo Lançamento</div>
+<div class="form-grid">
+<div class="form-field"><label>Data</label><input type="date" id="fd"></div>
+<div class="form-field" id="fdc"><label>Descrição</label><input type="text" id="fdesc" placeholder="Descrição..."></div>
+<div class="form-field hidden" id="fpar"><label>Parcela</label><input type="text" id="fparc" placeholder="Ex: 2/5"></div>
+<div class="form-field"><label>Valor (R$)</label><input type="text" id="fv" placeholder="0,00" oninput="fvf(this)"></div>
+<div class="form-field" id="fpg"><label>Pagamento</label><select id="fpgm" onchange="atualizaCorSelect(this)">
+  <option value="">Selecione</option>
+  <option value="cl" class="pg-cl">💳 cartão lê</option>
+  <option value="cj" class="pg-cj">💳 cartão joão</option>
+  <option value="cv" class="pg-cv">💳 cartão virtual</option>
+  <option value="px" class="pg-px">⚡ pix</option>
+  <option value="if" class="pg-if">🍔 ifood benefícios</option>
+  <option value="bl" class="pg-bl">📄 boleto/débito</option>
+  <option value="mp" class="pg-mp">💰 mercado pago</option>
+  <option value="dh" class="pg-dh">💵 dinheiro</option>
+</select></div>
+</div>
+<button class="btn-lancar" onclick="lancar()">✨ Lançar</button>
+</div>
+
+<div id="tc"></div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="fecharModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-titulo">✏️ Editar Lançamento</div>
+      <button class="modal-fechar" onclick="fecharModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-grid">
+        <div class="form-field">
+          <label>Categoria</label>
+          <select id="ed-cat">
+            <option value="entradas">💰 Entradas</option>
+            <option value="dizimo">⛪ Dízimo</option>
+            <option value="mercado">🛒 Mercado</option>
+            <option value="lazer">🎉 Lazer</option>
+            <option value="gasolina">⛽ Gasolina</option>
+            <option value="salao">💇 Salão</option>
+            <option value="contas_fixas">📋 Fixas</option>
+            <option value="contas_extras">📦 Extras</option>
+            <option value="fatura_cartao">💳 Fatura</option>
+          </select>
+        </div>
+        <div class="form-field"><label>Data</label><input type="date" id="ed-data"></div>
+        <div class="form-field" id="ed-fdesc"><label>Descrição</label><input type="text" id="ed-desc" placeholder="Descrição..."></div>
+        <div class="form-field" id="ed-fpar"><label>Parcela</label><input type="text" id="ed-parc" placeholder="Ex: 2/5"></div>
+        <div class="form-field"><label>Valor (R$)</label><input type="text" id="ed-valor" placeholder="0,00" oninput="fvf(this)"></div>
+        <div class="form-field" id="ed-fpg">
+          <label>Pagamento</label>
+          <select id="ed-pg" onchange="atualizaCorSelect(this)">
+            <option value="">Selecione</option>
+            <option value="cl" class="pg-cl">💳 cartão lê</option>
+            <option value="cj" class="pg-cj">💳 cartão joão</option>
+            <option value="cv" class="pg-cv">💳 cartão virtual</option>
+            <option value="px" class="pg-px">⚡ pix</option>
+            <option value="if" class="pg-if">🍔 ifood benefícios</option>
+            <option value="bl" class="pg-bl">📄 boleto/débito</option>
+            <option value="mp" class="pg-mp">💰 mercado pago</option>
+            <option value="dh" class="pg-dh">💵 dinheiro</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarEdicao()">💾 Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ FIREBASE INTEGRATION ============
+let db = null, firestore = null, dbReady = false, unsubscribe = null;
+
+function initFirebase() {
+  if (window.db && window.firestore) {
+    db = window.db;
+    firestore = window.firestore;
+    carregarDados();
+  } else {
+    window.addEventListener('firebase-ready', initFirebase);
+  }
+}
+
+async function carregarDados() {
+  atualizarSync('syncing', 'Sincronizando...');
+  try {
+    const docRef = firestore.doc(db, 'financas', 'dados2026');
+    const docSnap = await firestore.getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const dados = docSnap.data();
+      if (dados.entradas) D.entradas = dados.entradas;
+      if (dados.dizimo) D.dizimo = dados.dizimo;
+      if (dados.mercado) D.mercado = dados.mercado;
+      if (dados.lazer) D.lazer = dados.lazer;
+      if (dados.gasolina) D.gasolina = dados.gasolina;
+      if (dados.salao) D.salao = dados.salao;
+      if (dados.contas_fixas) D.contas_fixas = dados.contas_fixas;
+      if (dados.contas_extras) D.contas_extras = dados.contas_extras;
+      if (dados.fatura_cartao) D.fatura_cartao = dados.fatura_cartao;
+      if (dados.ultimoId) N = dados.ultimoId;
+      toast('✅ Dados carregados do Firebase!');
+    } else {
+      await salvarNoFirebase();
+      toast('🆕 Banco criado no Firebase!');
+    }
+
+    dbReady = true;
+    atualizarSync('online', 'Online');
+    ct(); rt(); renderFechamentoMensal(); renderGraficos();
+
+    // Escutar mudanças em tempo real
+    if (unsubscribe) unsubscribe();
+    unsubscribe = firestore.onSnapshot(docRef, (snap) => {
+      if (snap.exists() && dbReady) {
+        const dados = snap.data();
+        if (dados.entradas) D.entradas = dados.entradas;
+        if (dados.dizimo) D.dizimo = dados.dizimo;
+        if (dados.mercado) D.mercado = dados.mercado;
+        if (dados.lazer) D.lazer = dados.lazer;
+        if (dados.gasolina) D.gasolina = dados.gasolina;
+        if (dados.salao) D.salao = dados.salao;
+        if (dados.contas_fixas) D.contas_fixas = dados.contas_fixas;
+        if (dados.contas_extras) D.contas_extras = dados.contas_extras;
+        if (dados.fatura_cartao) D.fatura_cartao = dados.fatura_cartao;
+        if (dados.ultimoId) N = dados.ultimoId;
+        ct(); rt(); renderFechamentoMensal(); renderGraficos();
+        atualizarSync('online', 'Sincronizado');
+      }
+    });
+  } catch (err) {
+    console.error('Erro Firebase:', err);
+    atualizarSync('offline', 'Erro de conexão');
+    toast('❌ Erro ao conectar. Usando dados locais.');
+    ct(); rt(); renderFechamentoMensal(); renderGraficos();
+  }
+}
+
+async function salvarNoFirebase() {
+  if (!db || !firestore || !dbReady) return;
+  atualizarSync('syncing', 'Salvando...');
+  try {
+    const docRef = firestore.doc(db, 'financas', 'dados2026');
+    await firestore.setDoc(docRef, {
+      entradas: D.entradas,
+      dizimo: D.dizimo,
+      mercado: D.mercado,
+      lazer: D.lazer,
+      gasolina: D.gasolina,
+      salao: D.salao,
+      contas_fixas: D.contas_fixas,
+      contas_extras: D.contas_extras,
+      fatura_cartao: D.fatura_cartao,
+      ultimoId: N,
+      atualizado: new Date().toISOString()
+    });
+    atualizarSync('online', 'Salvo!');
+    setTimeout(() => atualizarSync('online', 'Online'), 2000);
+  } catch (err) {
+    console.error('Erro ao salvar:', err);
+    atualizarSync('offline', 'Falha ao salvar');
+  }
+}
+
+function atualizarSync(classe, texto) {
+  const el = document.getElementById('sync-indicator');
+  if (!el) return;
+  const cores = {
+    online: 'background:#d1fae5;color:#059669',
+    offline: 'background:#fee2e2;color:#dc2626',
+    syncing: 'background:#fef3c7;color:#d97706'
+  };
+  el.style = `position:fixed;top:12px;right:12px;z-index:1000;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:6px;transition:all .3s;${cores[classe] || cores.offline}`;
+  el.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:currentColor;animation:${classe === 'syncing' ? 'pulse 1s infinite' : 'none'}"></span><span>${texto}</span>`;
+}
+
+// ============ DADOS E CONFIGURAÇÕES ============
+const D={"entradas": [{"d": "2026-02-27", "desc": "residual vale março", "v": 380, "id": 1}, {"d": "2026-03-31", "desc": "vale", "v": 380, "id": 2}, {"d": "2026-04-03", "desc": "pix páscoa dona edna", "v": 200, "id": 3}, {"d": "2026-04-07", "desc": "salário lê", "v": 1672, "id": 4}, {"d": "2026-04-15", "desc": "pix bianca", "v": 3542.5, "id": 5}, {"d": "2026-04-15", "desc": "salário joão", "v": 1442.69, "id": 6}, {"d": "2026-04-15", "desc": "salário joão", "v": 6585.22, "id": 7}, {"d": "2026-04-17", "desc": "pix luisinho", "v": 21, "id": 8}, {"d": "2026-04-22", "desc": "pix chinelo emília", "v": 17.5, "id": 9}, {"d": "2026-05-07", "desc": "salário lê", "v": 1671, "id": 10}, {"d": "2026-05-11", "desc": "salário joão", "v": 1442.69, "id": 11}, {"d": "2026-05-11", "desc": "salário joão", "v": 6585.22, "id": 12}, {"d": "2026-05-12", "desc": "pix bianca", "v": 3542.5, "id": 13}, {"d": "2026-05-21", "desc": "comissão", "v": 775, "id": 14}, {"d": "2026-05-29", "desc": "reembolso receita federal", "v": 2811.52, "id": 15}, {"d": "2026-05-29", "desc": "gasto retiro falda e samu", "v": 120, "id": 16}, {"d": "2026-05-29", "desc": "vale", "v": 380, "id": 17}, {"d": "2026-06-03", "desc": "salário lê", "v": 1671, "id": 18}, {"d": "2026-06-07", "desc": "pix samu", "v": 15, "id": 19}, {"d": "2026-06-07", "desc": "pix carol", "v": 14.7, "id": 20}, {"d": "2026-06-10", "desc": "salário joão", "v": 6585.22, "id": 21}, {"d": "2026-06-10", "desc": "salário joão", "v": 1442.69, "id": 22}, {"d": "2026-06-10", "desc": "pix paulinha", "v": 14.7, "id": 23}, {"d": "2026-06-10", "desc": "pix luisinho", "v": 117.67, "id": 24}, {"d": "2026-06-16", "desc": "pix bianca 1/3", "v": 3542.5, "id": 25}, {"d": "2026-06-19", "desc": "comissão", "v": 1070, "id": 26}, {"d": "2026-06-24", "desc": "parcela carro 1/4", "v": 15500, "id": 27}, {"d": "2026-07-01", "desc": "vale", "v": 380, "id": 28}, {"d": "2026-07-06", "desc": "salário lê", "v": 1672, "id": 29}, {"d": "2026-07-10", "desc": "plano de saúde", "v": 765, "id": 30}, {"d": "2026-07-14", "desc": "salário joão", "v": 6585.22, "id": 31}, {"d": "2026-07-14", "desc": "salário joão", "v": 1442.69, "id": 32}, {"d": "2026-07-24", "desc": "pix bianca 2/3", "v": 4930, "id": 33}, {"d": "2026-07-24", "desc": "pix bianca diferença junho", "v": 1387.5, "id": 34}, {"d": "2026-07-24", "desc": "parcela carro 2/4", "v": 10000, "id": 35}], "dizimo": [{"d": "2026-04-26", "desc": "", "v": 468, "id": 36}, {"d": "2026-06-14", "desc": "dízimo 1/2", "v": 267.4, "id": 37}, {"d": "2026-06-21", "desc": "dízimo 2/2", "v": 780, "id": 38}, {"d": "2026-06-21", "desc": "comissão", "v": 107, "id": 39}, {"d": "2026-06-21", "desc": "oferta", "v": 13, "id": 40}, {"d": "2026-07-06", "desc": "oferta", "v": 50, "id": 41}, {"d": "2026-07-06", "desc": "dízimo salários", "v": 969.99, "id": 42}], "mercado": [{"d": "2026-04-05", "v": 19.9, "pg": "cv", "id": 43}, {"d": "2026-04-06", "v": 14.98, "pg": "cl", "id": 44}, {"d": "2026-04-10", "v": 42.64, "pg": "cv", "id": 45}, {"d": "2026-04-12", "v": 101.37, "pg": "cj", "id": 46}, {"d": "2026-04-15", "v": 13.0, "pg": "cl", "id": 47}, {"d": "2026-04-16", "v": 330.69, "pg": "px", "id": 48}, {"d": "2026-04-16", "v": 41.94, "pg": "cv", "id": 49}, {"d": "2026-04-16", "v": 12, "pg": "px", "id": 50}, {"d": "2026-04-18", "v": 14.38, "pg": "cv", "id": 51}, {"d": "2026-04-22", "v": 137.76, "pg": "cl", "id": 52}, {"d": "2026-04-24", "v": 47.14, "pg": "cv", "id": 53}, {"d": "2026-04-26", "v": 135.73, "pg": "cj", "id": 54}, {"d": "2026-04-29", "v": 44.92, "pg": "cv", "id": 55}, {"d": "2026-04-30", "v": 25.9, "pg": "cv", "id": 56}, {"d": "2026-05-01", "v": 303.18, "pg": "cj", "id": 57}, {"d": "2026-05-03", "v": 54.98, "pg": "cv", "id": 58}, {"d": "2026-05-06", "v": 98.19, "pg": "cl", "id": 59}, {"d": "2026-05-08", "v": 400.14, "pg": "cj", "id": 60}, {"d": "2026-05-09", "v": 23.6, "pg": "px", "id": 61}, {"d": "2026-05-15", "v": 211.49, "pg": "cl", "id": 62}, {"d": "2026-05-17", "v": 117.49, "pg": "cv", "id": 63}, {"d": "2026-05-22", "v": 17.94, "pg": "cl", "id": 64}, {"d": "2026-05-23", "v": 6.49, "pg": "cj", "id": 65}, {"d": "2026-05-24", "v": 358.43, "pg": "cl", "id": 66}, {"d": "2026-06-01", "v": 301.6, "pg": "cv", "id": 67}, {"d": "2026-06-03", "v": 125.57, "pg": "cj", "id": 68}, {"d": "2026-06-03", "v": 33.91, "pg": "cl", "id": 69}, {"d": "2026-06-07", "v": 43.21, "pg": "cv", "id": 70}, {"d": "2026-06-10", "v": 69.43, "pg": "cj", "id": 71}, {"d": "2026-06-13", "v": 384.41, "pg": "cl", "id": 72}, {"d": "2026-06-17", "v": 27.97, "pg": "cl", "id": 73}, {"d": "2026-06-18", "v": 10.0, "pg": "px", "id": 74}, {"d": "2026-06-20", "v": 58.67, "pg": "cj", "id": 75}, {"d": "2026-06-20", "v": 325.86, "pg": "cl", "id": 76}, {"d": "2026-06-21", "v": 20.19, "pg": "cv", "id": 77}, {"d": "2026-06-24", "v": 249.95, "pg": "cl", "id": 78}, {"d": "2026-06-25", "v": 6.99, "pg": "cj", "id": 79}, {"d": "2026-06-28", "v": 69.96, "pg": "cv", "id": 80}, {"d": "2026-06-28", "v": 48.58, "pg": "cj", "id": 81}, {"d": "2026-06-29", "v": 221.55, "pg": "cl", "id": 82}, {"d": "2026-06-29", "v": 6.99, "pg": "cj", "id": 83}, {"d": "2026-06-30", "v": 22.96, "pg": "cl", "id": 84}, {"d": "2026-07-03", "v": 204.72, "pg": "cv", "id": 85}, {"d": "2026-07-05", "v": 82.26, "pg": "cj", "id": 86}, {"d": "2026-07-09", "v": 94.06, "pg": "cv", "id": 87}, {"d": "2026-07-10", "v": 30.34, "pg": "cj", "id": 88}, {"d": "2026-07-14", "v": 68.63, "pg": "cv", "id": 89}, {"d": "2026-07-14", "v": 170.0, "pg": "px", "id": 90}, {"d": "2026-07-18", "v": 130.53, "pg": "cl", "id": 91}, {"d": "2026-07-18", "v": 35.9, "pg": "cj", "id": 92}, {"d": "2026-07-19", "v": 109.19, "pg": "cv", "id": 93}], "lazer": [{"d": "2026-04-04", "desc": "gelatto café lindóia", "v": 66, "id": 94}, {"d": "2026-04-08", "desc": "hambuerguer promo", "v": 0.9, "id": 95}, {"d": "2026-04-08", "desc": "docinho promo", "v": 0.9, "id": 96}, {"d": "2026-04-10", "desc": "Iguatemi Ribeirão", "v": 43.8, "id": 97}, {"d": "2026-04-10", "desc": "paçoquinha sinal", "v": 5.0, "id": 98}, {"d": "2026-04-12", "desc": "luís sítio", "v": 54.0, "id": 99}, {"d": "2026-04-19", "desc": "esfirra", "v": 30.53, "id": 100}, {"d": "2026-04-20", "desc": "açaí", "v": 20.5, "id": 101}, {"d": "2026-04-25", "desc": "prata", "v": 87, "id": 102}, {"d": "2026-04-25", "desc": "mercado luisinho", "v": 45.9, "id": 103}, {"d": "2026-04-29", "desc": "amazonas sucos", "v": 1.99, "id": 104}, {"d": "2026-05-02", "desc": "big boca", "v": 32.95, "id": 105}, {"d": "2026-05-09", "desc": "torta de frango", "v": 70.0, "id": 106}, {"d": "2026-05-09", "desc": "pastelzinho", "v": 22.5, "id": 107}, {"d": "2026-05-23", "desc": "burguer king", "v": 65.9, "id": 108}, {"d": "2026-06-02", "desc": "maru sushi", "v": 104.5, "id": 109}, {"d": "2026-06-01", "desc": "chiquinho sorvetes", "v": 21.0, "id": 110}, {"d": "2026-06-04", "desc": "riosh", "v": 298.96, "id": 111}, {"d": "2026-06-04", "desc": "água cristo", "v": 8.0, "id": 112}, {"d": "2026-06-04", "desc": "cidade do cristo", "v": 15.0, "id": 113}, {"d": "2026-06-04", "desc": "bela casa café poços", "v": 86.9, "id": 114}, {"d": "2026-06-06", "desc": "cachorro quente", "v": 96.22, "id": 115}, {"d": "2026-06-08", "desc": "cone de limão", "v": 20, "id": 116}, {"d": "2026-06-09", "desc": "torta brookie", "v": 5.89, "id": 117}, {"d": "2026-06-10", "desc": "bolo emília", "v": 44.0, "id": 118}, {"d": "2026-06-12", "desc": "cone paçoca", "v": 70, "id": 119}, {"d": "2026-06-15", "desc": "cone ninho e nutella", "v": 32, "id": 120}, {"d": "2026-06-20", "desc": "cookie", "v": 63.96, "id": 121}, {"d": "2026-06-21", "desc": "casquinha bk", "v": 10.9, "id": 122}, {"d": "2026-06-27", "desc": "café vi e gabs", "v": 149, "id": 123}, {"d": "2026-07-04", "desc": "picanha", "v": 140.04, "id": 124}, {"d": "2026-07-04", "desc": "esfirra", "v": 36, "id": 125}, {"d": "2026-07-05", "desc": "açaí", "v": 10, "id": 126}, {"d": "2026-07-11", "desc": "esfirra níver luisinho", "v": 50.08, "id": 127}, {"d": "2026-07-16", "desc": "subway", "v": 62, "id": 128}, {"d": "2026-07-18", "desc": "pizza", "v": 85.9, "id": 129}], "gasolina": [{"d": "2026-04-02", "v": 398.04, "pg": "cv", "id": 130}, {"d": "2026-04-10", "v": 227.33, "pg": "cj", "id": 131}, {"d": "2026-04-15", "v": 396.06, "pg": "cv", "id": 132}, {"d": "2026-04-25", "v": 49.44, "pg": "cj", "id": 133}, {"d": "2026-05-03", "v": 342.0, "pg": "cv", "id": 134}, {"d": "2026-05-23", "v": 328.73, "pg": "cj", "id": 135}, {"d": "2026-05-29", "v": 142.46, "pg": "cl", "id": 136}, {"d": "2026-05-31", "v": 222.2, "pg": "cv", "id": 137}, {"d": "2026-06-04", "v": 12.01, "pg": "cj", "id": 138}, {"d": "2026-06-13", "v": 342.14, "pg": "cv", "id": 139}, {"d": "2026-06-24", "v": 148.84, "pg": "cj", "id": 140}, {"d": "2026-06-28", "v": 69.46, "pg": "cv", "id": 141}, {"d": "2026-07-04", "v": 99.23, "pg": "cj", "id": 142}, {"d": "2026-07-05", "v": 49.61, "pg": "cl", "id": 143}, {"d": "2026-07-08", "desc": "samuel - captiva", "v": 50, "id": 144}, {"d": "2026-07-12", "v": 29.77, "pg": "cv", "id": 145}, {"d": "2026-07-15", "v": 49.61, "pg": "cj", "id": 146}, {"d": "2026-07-18", "v": 99.22, "pg": "cv", "id": 147}], "salao": [{"d": "2026-04-02", "desc": "depilação", "v": 85, "pg": "cl", "id": 148}, {"d": "2026-04-17", "desc": "pé e mão", "v": 75, "pg": "cj", "id": 149}, {"d": "2026-05-02", "desc": "pé e mão", "v": 75, "pg": "cl", "id": 150}, {"d": "2026-05-06", "desc": "depilação", "v": 85, "pg": "cj", "id": 151}, {"d": "2026-05-23", "desc": "pé", "v": 40, "pg": "cl", "id": 152}, {"d": "2026-05-23", "desc": "corte joão", "v": 40, "pg": "cj", "id": 153}, {"d": "2026-05-29", "desc": "mão", "v": 35, "pg": "cl", "id": 154}, {"d": "2026-06-13", "desc": "pé e mão", "v": 75, "pg": "cv", "id": 155}, {"d": "2026-07-02", "desc": "cabelo e unhas", "v": 135, "pg": "cl", "id": 156}, {"d": "2026-07-18", "desc": "depilação", "v": 95, "pg": "cj", "id": 157}], "contas_fixas": [{"d": "2026-04-10", "desc": "Faculdade", "v": 198.5, "pg": "cv", "id": 158}, {"d": "2026-04-10", "desc": "Haiti", "v": 70, "pg": "cj", "id": 159}, {"d": "2026-04-15", "desc": "Internet", "v": 106.29, "pg": "if", "id": 160}, {"d": "2026-04-15", "desc": "Plano Lê", "v": 61.64, "pg": "cv", "id": 161}, {"d": "2026-04-18", "desc": "Elektro", "v": 154.13, "pg": "cv", "id": 162}, {"d": "2026-04-20", "desc": "Aluguel", "v": 2016.02, "pg": "px", "id": 163}, {"d": "2026-04-20", "desc": "Gás", "v": 9.24, "pg": "px", "id": 164}, {"d": "2026-05-10", "desc": "Faculdade", "v": 198.5, "pg": "cv", "id": 165}, {"d": "2026-05-10", "desc": "Fatura Nubank", "v": 73.31, "pg": "cl", "id": 166}, {"d": "2026-05-10", "desc": "Haiti", "v": 70.0, "pg": "cj", "id": 167}, {"d": "2026-05-15", "desc": "Internet", "v": 99.99, "pg": "if", "id": 168}, {"d": "2026-05-15", "desc": "Plano Lê", "v": 0, "obs": "-", "id": 169}, {"d": "2026-05-18", "desc": "Elektro", "v": 138.77, "pg": "cv", "id": 170}, {"d": "2026-05-20", "desc": "Aluguel", "v": 2014.3, "pg": "px", "id": 171}, {"d": "2026-05-20", "desc": "Gás", "v": 9.22, "pg": "px", "id": 172}, {"d": "2026-06-10", "desc": "Faculdade", "v": 198.5, "pg": "cv", "id": 173}, {"d": "2026-06-10", "desc": "Fatura Nubank 3/3", "v": 73.31, "pg": "cl", "id": 174}, {"d": "2026-06-10", "desc": "Haiti", "v": 70, "pg": "cj", "id": 175}, {"d": "2026-06-15", "desc": "Internet", "v": 99.99, "pg": "if", "id": 176}, {"d": "2026-06-15", "desc": "Plano Lê", "v": 61.66, "pg": "cv", "id": 177}, {"d": "2026-06-18", "desc": "Elektro", "v": 227.15, "pg": "cv", "id": 178}, {"d": "2026-06-20", "desc": "Aluguel", "v": 2014.3, "pg": "px", "id": 179}, {"d": "2026-06-20", "desc": "Gás", "v": 9.41, "pg": "px", "id": 180}, {"d": "2026-07-01", "desc": "Plano Lê (ref. maio)", "v": 60.34, "pg": "cv", "id": 181}, {"d": "2026-07-10", "desc": "Faculdade", "v": 17.5, "pg": "cv", "id": 182}, {"d": "2026-07-10", "desc": "Haiti", "v": 70, "pg": "cj", "id": 183}, {"d": "2026-07-10", "desc": "Plano de saúde", "v": 197.73, "pg": "cv", "id": 184}, {"d": "2026-07-15", "desc": "Internet", "v": 99.99, "pg": "if", "id": 185}, {"d": "2026-07-15", "desc": "Plano Lê", "v": 64.63, "pg": "cv", "id": 186}, {"d": "2026-07-18", "desc": "Elektro", "v": 183.68, "pg": "cv", "id": 187}, {"d": "2026-07-20", "desc": "Aluguel", "v": 1945.9, "pg": "px", "id": 188}, {"d": "2026-07-20", "desc": "Água", "v": 76.75, "pg": "px", "id": 189}, {"d": "2026-07-20", "desc": "Gás", "v": 10.94, "pg": "px", "id": 190}], "contas_extras": [{"d": "2026-04-06", "desc": "", "v": 12.2, "pg": "cv", "id": 191}, {"d": "2026-04-09", "desc": "pix marmita", "v": 34.9, "pg": "px", "id": 192}, {"d": "2026-04-10", "desc": "paçoca sinal", "v": 5.0, "pg": "cv", "id": 193}, {"d": "2026-04-23", "desc": "ubiz", "v": 9.5, "pg": "cj", "id": 194}, {"d": "2026-04-28", "desc": "samuel carro", "v": 100, "pg": "px", "id": 195}, {"d": "2026-04-29", "desc": "mecanico", "v": 225, "pg": "cl", "id": 196}, {"d": "2026-05-26", "desc": "ubix", "v": 11.8, "pg": "cj", "id": 197}, {"d": "2026-06-03", "desc": "pix lívia jocum", "v": 20, "pg": "px", "id": 198}, {"d": "2026-06-13", "desc": "manutenção", "v": 91, "pg": "cv", "id": 199}, {"d": "2026-06-21", "desc": "pix pepe", "v": 500, "pg": "px", "id": 200}, {"d": "2026-06-27", "desc": "pix ridi", "v": 432, "pg": "px", "id": 201}, {"d": "2026-06-30", "desc": "pix glaucia 1/2", "v": 197.5, "pg": "px", "id": 202}, {"d": "2026-07-01", "desc": "consulta gastro", "v": 500, "pg": "cl", "id": 203}, {"d": "2026-07-09", "desc": "ventilador", "v": 100, "pg": "px", "id": 204}, {"d": "2026-07-19", "desc": "pop 10 gabs", "v": 10.0, "pg": "cj", "id": 205}, {"d": "2026-07-17", "desc": "batatinha", "v": 8.5, "pg": "cv", "id": 206}, {"d": "2026-07-18", "desc": "limpeza colchão", "v": 190, "pg": "cl", "id": 207}, {"d": "2026-07-18", "desc": "chiclete", "v": 48.89, "pg": "cj", "id": 208}, {"d": "2026-07-30", "desc": "pix glaucia 2/2", "v": 197.5, "pg": "px", "id": 209}], "fatura_cartao": [{"d": "2026-04-10", "desc": "Pimenta doce", "par": "3/3", "v": 66.33, "pg": "cl", "id": 210}, {"d": "2026-04-10", "desc": "Mentoria", "par": "4/12", "v": 103.42, "pg": "cj", "id": 211}, {"d": "2026-04-10", "desc": "Guesher", "par": "2/5", "v": 1500, "pg": "cl", "id": 212}, {"d": "2026-04-10", "desc": "Guesher", "par": "3/5", "v": 1746.43, "pg": "cj", "id": 213}, {"d": "2026-04-10", "desc": "Diprimo", "par": "2/3", "v": 175, "pg": "cl", "id": 214}, {"d": "2026-04-10", "desc": "Contaja", "par": "", "v": 104.8, "pg": "cv", "id": 215}, {"d": "2026-04-10", "desc": "Localizar", "par": "", "v": 136.67, "pg": "cj", "id": 216}, {"d": "2026-04-10", "desc": "Peça do carro", "par": "", "v": 313.5, "pg": "cl", "id": 217}, {"d": "2026-04-10", "desc": "Farmácia Lindoia", "par": "", "v": 53.3, "pg": "cl", "id": 218}, {"d": "2026-04-10", "desc": "Camisetas Igreja", "par": "", "v": 99.8, "pg": "cj", "id": 219}, {"d": "2026-04-10", "desc": "Chinelo", "par": "", "v": 34.9, "pg": "cv", "id": 220}, {"d": "2026-05-10", "desc": "Tênis Centauro", "par": "1/5", "v": 77.92, "pg": "cj", "id": 221}, {"d": "2026-05-10", "desc": "Boticário", "par": "1/2", "v": 62.4, "pg": "cl", "id": 222}, {"d": "2026-05-10", "desc": "Mercado livre", "par": "", "v": 9.9, "pg": "cv", "id": 223}, {"d": "2026-05-10", "desc": "Contaja", "par": "", "v": 117.9, "pg": "cj", "id": 224}, {"d": "2026-06-10", "desc": "Mentoria", "par": "5/12", "v": 103.42, "pg": "cj", "id": 225}, {"d": "2026-06-10", "desc": "Tênis Centauro", "par": "2/5", "v": 77.91, "pg": "cj", "id": 226}, {"d": "2026-06-10", "desc": "Mentoria cripto", "par": "1/12", "v": 198.31, "pg": "cl", "id": 227}, {"d": "2026-06-10", "desc": "Pernambucanas", "par": "1/2", "v": 74.99, "pg": "cj", "id": 228}, {"d": "2026-06-10", "desc": "Mesa varanda", "par": "1/2", "v": 229.0, "pg": "cv", "id": 229}, {"d": "2026-06-10", "desc": "Guesher", "par": "4/5", "v": 1500, "pg": "cl", "id": 230}, {"d": "2026-06-10", "desc": "Boticário", "par": "2/2", "v": 62.4, "pg": "cl", "id": 231}, {"d": "2026-06-10", "desc": "Guesher", "par": "5/5", "v": 1746.43, "pg": "cj", "id": 232}, {"d": "2026-06-10", "desc": "Evolução", "par": "2/2", "v": 69.99, "pg": "cj", "id": 233}, {"d": "2026-06-10", "desc": "Claude", "par": "", "v": 4.05, "pg": "cl", "id": 234}, {"d": "2026-06-10", "desc": "Claude", "par": "", "v": 115.66, "pg": "cl", "id": 235}, {"d": "2026-06-10", "desc": "Farmácia", "par": "", "v": 22.99, "pg": "cj", "id": 236}, {"d": "2026-06-10", "desc": "Contaja", "par": "", "v": 117.9, "pg": "cj", "id": 237}, {"d": "2026-06-10", "desc": "Multitrack", "par": "", "v": 34.9, "pg": "cv", "id": 238}, {"d": "2026-06-10", "desc": "Melimais", "par": "", "v": 9.9, "pg": "cj", "id": 239}, {"d": "2026-06-10", "desc": "Anticoncepcional", "par": "", "v": 78.3, "pg": "cl", "id": 240}, {"d": "2026-06-10", "desc": "Farmácia", "par": "", "v": 88.39, "pg": "cj", "id": 241}, {"d": "2026-06-10", "desc": "Orquídea", "par": "", "v": 30.0, "pg": "cv", "id": 242}, {"d": "2026-06-10", "desc": "1 real", "par": "", "v": 1.0, "pg": "cj", "id": 243}, {"d": "2026-06-10", "desc": "Carteira chines", "par": "", "v": 30.0, "pg": "cl", "id": 244}, {"d": "2026-06-10", "desc": "Borrifador", "par": "", "v": 4.0, "pg": "cj", "id": 245}, {"d": "2026-06-10", "desc": "Íma", "par": "", "v": 8.5, "pg": "cl", "id": 246}, {"d": "2026-07-10", "desc": "Viagem João", "par": "1/12", "v": 818.07, "pg": "cj", "id": 247}, {"d": "2026-07-10", "desc": "Mentoria", "par": "6/12", "v": 103.42, "pg": "cj", "id": 248}, {"d": "2026-07-10", "desc": "Tênis Centauro", "par": "3/5", "v": 77.91, "pg": "cj", "id": 249}, {"d": "2026-07-10", "desc": "Mentoria cripto", "par": "2/12", "v": 198.31, "pg": "cl", "id": 250}, {"d": "2026-07-10", "desc": "Remédios Lê (gastro)", "par": "1/3", "v": 55.91, "pg": "cl", "id": 251}, {"d": "2026-07-10", "desc": "Maquiagem lê", "par": "1/2", "v": 65.98, "pg": "cj", "id": 252}, {"d": "2026-07-10", "desc": "Pernambucanas", "par": "2/2", "v": 74.99, "pg": "cj", "id": 253}, {"d": "2026-07-10", "desc": "Mesa varanda", "par": "2/2", "v": 229.0, "pg": "cv", "id": 254}, {"d": "2026-07-10", "desc": "Guesher", "par": "5/5", "v": 1500, "pg": "cl", "id": 255}, {"d": "2026-07-10", "desc": "Baterias baixo", "par": "", "v": 89.8, "pg": "cj", "id": 256}, {"d": "2026-07-10", "desc": "Contaja", "par": "", "v": 117.9, "pg": "cj", "id": 257}, {"d": "2026-07-10", "desc": "Remédios lê", "par": "", "v": 99.74, "pg": "cl", "id": 258}, {"d": "2026-07-10", "desc": "Melimais", "par": "", "v": 9.9, "pg": "cj", "id": 259}, {"d": "2026-08-10", "desc": "Viagem Lê", "par": "1/12", "v": 1500, "pg": "cl", "id": 260}, {"d": "2026-08-10", "desc": "Viagem João", "par": "2/12", "v": 818.07, "pg": "cj", "id": 261}, {"d": "2026-08-10", "desc": "Mentoria", "par": "7/12", "v": 103.42, "pg": "cj", "id": 262}, {"d": "2026-08-10", "desc": "Tênis Centauro", "par": "4/5", "v": 77.91, "pg": "cj", "id": 263}, {"d": "2026-08-10", "desc": "Mentoria cripto", "par": "3/12", "v": 198.31, "pg": "cl", "id": 264}, {"d": "2026-08-10", "desc": "Remédios Lê (gastro)", "par": "2/3", "v": 55.91, "pg": "cl", "id": 265}, {"d": "2026-08-10", "desc": "Maquiagem lê", "par": "2/2", "v": 65.98, "pg": "cj", "id": 266}, {"d": "2026-08-24", "desc": "parcela carro 3/4", "v": 10000, "id": 267}, {"d": "2026-09-24", "desc": "parcela carro 4/4", "v": 10000, "id": 268}]};
+
+let T='entradas',N=1000,editandoId=null,editandoCat=null;
+const M=['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const P={cl:'pg-cl',cj:'pg-cj',cv:'pg-cv',px:'pg-px',if:'pg-if',bl:'pg-bl',mp:'pg-mp',dh:'pg-dh'};
+const PN={cl:'cartão lê',cj:'cartão joão',cv:'cartão virtual',px:'pix',if:'ifood benefícios',bl:'boleto/débito',mp:'mercado pago',dh:'dinheiro'};
+const PCOR={cl:'#be185d',cj:'#2563eb',cv:'#d97706',px:'#059669',if:'#7c3aed',bl:'#4b5563',mp:'#0891b2',dh:'#ea580c'};
+const CATNOME={entradas:'Entradas',dizimo:'Dízimo',mercado:'Mercado',lazer:'Lazer',gasolina:'Gasolina',salao:'Salão',contas_fixas:'Fixas',contas_extras:'Extras',fatura_cartao:'Fatura Cartão'};
+const CATCORES={entradas:'#3b82f6',dizimo:'#8b5cf6',mercado:'#f59e0b',lazer:'#ec4899',gasolina:'#10b981',salao:'#f97316',contas_fixas:'#6366f1',contas_extras:'#ef4444',fatura_cartao:'#14b8a6'};
+const CATCOMPG={entradas:false,dizimo:false,mercado:true,lazer:true,gasolina:true,salao:true,contas_fixas:true,contas_extras:true,fatura_cartao:true};
+const CATCOMDESC={entradas:true,dizimo:true,mercado:false,lazer:true,gasolina:true,salao:true,contas_fixas:true,contas_extras:true,fatura_cartao:true};
+const CATCOMPAR={entradas:false,dizimo:false,mercado:false,lazer:false,gasolina:false,salao:false,contas_fixas:false,contas_extras:false,fatura_cartao:true};
+
+let charts={};
+
+document.getElementById('fd').value=new Date().toISOString().split('T')[0];
+
+function fm(v){return 'R$ '+v.toFixed(2).replace('.',',').replace(/(\d)(?=(\d{3})+(?!\d))/g,'$1.');}
+function fdc(s){let [a,m,d]=s.split('-');return d+'/'+m+'/'+a;}
+function fd(s){let [a,m,d]=s.split('-');return d+'/'+m;}
+function gk(s){return s.slice(0,7);}
+function gm(s){let [a,m]=s.split('-');return M[parseInt(m)]+' '+a;}
+function fvf(i){let v=i.value.replace(/\D/g,'');v=(v/100).toFixed(2);v=v.replace('.',',');v=v.replace(/(\d)(?=(\d{3})+(?!\d))/g,'$1.');i.value=v?'R$ '+v:'';}
+function pv(s){return parseFloat(s.replace(/[^\d,]/g,'').replace(',','.'))||0;}
+
+function atualizaCorSelect(sel){sel.className='';if(sel.value)sel.classList.add('pg-'+sel.value);}
+
+function ct(){
+let e=0,s=0;
+for(let c in D){D[c].forEach(i=>{if(c==='entradas')e+=i.v;else s+=i.v;});}
+document.getElementById('te').textContent=fm(e);
+document.getElementById('ts').textContent=fm(s);
+let sl=e-s;
+document.getElementById('sl').textContent=fm(sl);
+document.getElementById('sl').style.color=sl>=0?'#16a34a':'#dc2626';
+}
+
+function renderFechamentoMensal(){
+  let meses={};
+  for(let c in D){
+    D[c].forEach(i=>{
+      let k=gk(i.d);
+      if(!meses[k])meses[k]={ent:0,sai:0};
+      if(c==='entradas')meses[k].ent+=i.v;
+      else meses[k].sai+=i.v;
+    });
+  }
+  let ordem=Object.keys(meses).sort();
+  let html='';
+  ordem.forEach(k=>{
+    let m=M[parseInt(k.split('-')[1])]+' '+k.split('-')[0];
+    let ent=meses[k].ent,sai=meses[k].sai,sl=ent-sai;
+    html+=`<div class="fechamento-card" data-mes="${k}" onclick="filtrarPorMes('${k}')">
+      <div class="fechamento-mes">${m}</div>
+      <div class="fechamento-linhas">
+        <div class="fechamento-linha entr"><span>Entradas</span><span class="fechamento-valor">${fm(ent)}</span></div>
+        <div class="fechamento-linha saida"><span>Saídas</span><span class="fechamento-valor">${fm(sai)}</span></div>
+        <div class="fechamento-sep"></div>
+        <div class="fechamento-linha saldo"><span>Saldo</span><span class="fechamento-valor ${sl>=0?'pos':'neg'}">${fm(sl)}</span></div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('fechamento-grid').innerHTML=html;
+}
+
+function filtrarPorMes(mes){
+  document.querySelectorAll('.fechamento-card').forEach(c=>c.classList.remove('ativo'));
+  let ativo=document.querySelector(`.fechamento-card[data-mes="${mes}"]`);
+  if(ativo)ativo.classList.add('ativo');
+  let I=D[T]||[];
+  if(!I.length)return;
+  let filtrados=I.filter(i=>gk(i.d)===mes);
+  let c=document.getElementById('tc');
+  if(!filtrados.length){c.innerHTML='<div class="vazio">Nenhum lançamento neste mês.</div>';return;}
+  let S=[...filtrados].sort((a,b)=>new Date(a.d)-new Date(b.d));
+  c.innerHTML=renderTabela(S);
+  toast('📅 Mostrando '+M[parseInt(mes.split('-')[1])]+' — dê duplo clique no mês para ver todos');
+  ativo.ondblclick=function(){
+    document.querySelectorAll('.fechamento-card').forEach(c=>c.classList.remove('ativo'));
+    rt();toast('📅 Mostrando todos os lançamentos');
+  };
+}
+
+function renderGraficos(){
+  let catVal={};
+  for(let c in D){if(c!=='entradas'){catVal[CATNOME[c]]=D[c].reduce((s,i)=>s+i.v,0);}}
+  let catLabels=Object.keys(catVal),catData=Object.values(catVal),catColors=catLabels.map(l=>{let k=Object.keys(CATNOME).find(k=>CATNOME[k]===l);return CATCORES[k];});
+  if(charts.categorias)charts.categorias.destroy();
+  charts.categorias=new Chart(document.getElementById('chart-categorias'),{
+    type:'doughnut',
+    data:{labels:catLabels,datasets:[{data:catData,backgroundColor:catColors,borderWidth:2,borderColor:'#fff'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{boxWidth:12,font:{size:11}}},tooltip:{callbacks:{label:function(c){return c.label+': '+fm(c.raw);}}}},cutout:'55%'}
+  });
+
+  let meses={};
+  for(let c in D){
+    D[c].forEach(i=>{let k=gk(i.d);if(!meses[k])meses[k]={ent:0,sai:0};if(c==='entradas')meses[k].ent+=i.v;else meses[k].sai+=i.v;});
+  }
+  let ordem=Object.keys(meses).sort();
+  let lbls=ordem.map(k=>M[parseInt(k.split('-')[1])]+'/'+k.split('-')[0]);
+  let entData=ordem.map(k=>meses[k].ent);
+  let saiData=ordem.map(k=>meses[k].sai);
+
+  if(charts.mensal)charts.mensal.destroy();
+  charts.mensal=new Chart(document.getElementById('chart-mensal'),{
+    type:'line',
+    data:{labels:lbls,datasets:[
+      {label:'Entradas',data:entData,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.1)',fill:true,tension:0.3,pointRadius:4},
+      {label:'Saídas',data:saiData,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,0.1)',fill:true,tension:0.3,pointRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:12,font:{size:11}}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+fm(c.raw);}}}},scales:{y:{beginAtZero:true,ticks:{callback:function(v){return 'R$ '+v.toLocaleString('pt-BR');}}}}}
+  });
+
+  let pgVal={};
+  for(let c in D){if(c!=='entradas'&&c!=='dizimo'){
+    D[c].forEach(i=>{if(i.pg){if(!pgVal[PN[i.pg]])pgVal[PN[i.pg]]=0;pgVal[PN[i.pg]]+=i.v;}});
+  }}
+  let pgLabels=Object.keys(pgVal),pgData=Object.values(pgVal),pgColors=pgLabels.map(l=>{let k=Object.keys(PN).find(k=>PN[k]===l);return PCOR[k];});
+
+  if(charts.pagamento)charts.pagamento.destroy();
+  charts.pagamento=new Chart(document.getElementById('chart-pagamento'),{
+    type:'bar',
+    data:{labels:pgLabels,datasets:[{data:pgData,backgroundColor:pgColors,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return fm(c.raw);}}}},scales:{y:{beginAtZero:true,ticks:{callback:function(v){return 'R$ '+v.toLocaleString('pt-BR');}}}}}
+  });
+
+  if(charts.comparativo)charts.comparativo.destroy();
+  charts.comparativo=new Chart(document.getElementById('chart-comparativo'),{
+    type:'bar',
+    data:{labels:lbls,datasets:[
+      {label:'Entradas',data:entData,backgroundColor:'#3b82f6',borderRadius:4},
+      {label:'Saídas',data:saiData,backgroundColor:'#ef4444',borderRadius:4}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:12,font:{size:11}}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+fm(c.raw);}}}},scales:{y:{beginAtZero:true,ticks:{callback:function(v){return 'R$ '+v.toLocaleString('pt-BR');}}}}}
+  });
+}
+
+function sw(t,el){
+T=t;
+document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+if(el)el.classList.add('active');
+rt();
+let fdc=document.getElementById('fdc'),fpar=document.getElementById('fpar'),fpg=document.getElementById('fpg');
+if(T==='fatura_cartao')fpar.classList.remove('hidden');else fpar.classList.add('hidden');
+if(T==='entradas'||T==='dizimo')fpg.classList.add('hidden');else fpg.classList.remove('hidden');
+if(T==='mercado'||T==='gasolina')fdc.classList.add('hidden');else fdc.classList.remove('hidden');
+}
+
+function rt(){
+let c=document.getElementById('tc'),I=D[T]||[];
+if(!I.length){c.innerHTML='<div class="vazio">Nenhum lançamento.</div>';return;}
+let S=[...I].sort((a,b)=>new Date(a.d)-new Date(b.d));
+c.innerHTML=renderTabela(S);
+}
+
+function renderTabela(I){
+let h='';
+if(T==='entradas')h=re(I);
+else if(T==='dizimo')h=rd(I);
+else if(T==='mercado')h=rm(I);
+else if(T==='lazer')h=rl(I);
+else if(T==='gasolina')h=rg(I);
+else if(T==='salao')h=rs(I);
+else if(T==='contas_fixas')h=rcf(I);
+else if(T==='contas_extras')h=rce(I);
+else if(T==='fatura_cartao')h=rfc(I);
+return h;
+}
+
+function acoesHtml(id,cat){return `<div class="col-acoes"><button class="btn-acao btn-editar" onclick="abrirEditar('${cat}',${id},event)" title="Editar">✏️</button><button class="btn-acao btn-excluir" onclick="excluir('${cat}',${id},event)" title="Excluir">🗑️</button></div>`;}
+
+function re(I){
+let h='<div class="secao-titulo">💰 Entradas</div><div class="tabela"><div class="tabela-scroll">';
+h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:right">Valor</div><div></div></div>';
+let cm='',tm=0,R=[];
+I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
+if(cm)R.push({f:true,m:gm(I[I.length-1].d),t:tm});
+R.forEach(r=>{if(r.f){h+=`<div class="tabela-linha fechamento" style="grid-template-columns:100px 1fr 120px 70px"><div></div><div>Fechamento ${r.m.split(' ')[0]}</div><div class="col-valor">${fm(r.t)}</div><div></div></div>`;}
+else{h+=`<div class="tabela-linha" style="grid-template-columns:100px 1fr 120px 70px"><div>${fd(r.d)}</div><div class="col-desc">${r.desc}</div><div class="col-valor" style="color:#2563eb">${fm(r.v)}</div>${acoesHtml(r.id,'entradas')}</div>`;}});
+return h+'</div></div>';
+}
+
+function rd(I){
+let h='<div class="secao-titulo">⛪ Dízimo e Oferta</div><div class="tabela"><div class="tabela-scroll">';
+h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:right">Valor</div><div></div></div>';
+let cm='',tm=0,R=[];
+I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
+if(cm)R.push({f:true,m:gm(I[I.length-1].d),t:tm});
+R.forEach(r=>{if(r.f){h+=`<div class="tabela-linha fechamento" style="grid-template-columns:100px 1fr 120px 70px"><div></div><div>Fechamento ${r.m.split(' ')[0]}</div><div class="col-valor">${fm(r.t)}</div><div></div></div>`;}
+else{h+=`<div class="tabela-linha" style="grid-template-columns:100px 1fr 120px 70px"><div>${fd(r.d)}</div><div class="col-desc">${r.desc||'-'}</div><div class="col-valor" style="color:#dc2626">${fm(r.v)}</div>${acoesHtml(r.id,'dizimo')}</div>`;}});
+return h+'</div></div>';
+}
+
+function rm(I){
+let h='<div class="secao-titulo">🛒 Gastos Mercado</div><div class="tabela"><div class="tabela-scroll">';
+h+='<div class="tabela-header" style="grid-template-columns:100px 120px 120px 70px"><div>Data</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
+let cm='',tm=0,R=[];
+I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
+if(cm)R.push({f:true,m:gm(I[I.length-1].d),t:tm});
+R.forEach(r=>{if(r.f){h+=`<div class="tabela-linha fechamento" style="grid-template-columns:100px 120px 120px 70px"><div></div><div>Fechamento ${r.m.split(' ')[0]}</div><div class="col-valor">${fm(r.t)}</div><div></div></div>`;}
+else{let pc=r.pg?P[r.pg]:'';let pn=r.pg?PN[r.pg]:'';h+=`<div class="tabela-linha" style="grid-template-columns:100px 120px 120px 70px"><div>${fd(r.d)}</div><div class="col-pagamento ${pc}">${pn}</div><div class="col-valor" style="color:#dc2626">${fm(r.v)}</div>${acoesHtml(r.id,'mercado')}</div>`;}});
+return h+'</div></div>';
+}
+
+function rl(I){
+let h='<div class="secao-titulo">🎉 Gastos Lazer</div><div class="tabela"><div class="tabela-scroll">';
+h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:right">Valor</div><div></div></div>';
+let cm='',tm=0,R=[];
+I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
+if(cm)R.push({f:true,m:gm(I[I.length-1].d),t:tm});
+R.forEach(r=>{if(r.f){h+=`<div class="tabela-linha fechamento" style="grid-template-columns:100px 1fr 120px 70px"><div></div><div>Fechamento ${r.m.split(' ')[0]}</div><div class="col-valor">${fm(r.t)}</div><div></div></div>`;}
+else{h+=`<div class="tabela-linha" style="grid-template-columns:100px 1fr 120px 70px"><div>${fd(r.d)}</div><div class="col-desc">${r.desc}</div><div class="col-valor" style="color:#dc2626">${fm(r.v)}</div>${acoesHtml(r.id,'lazer')}</div>`;}});
+return h+'</div></div>';
+}
+
+function rg(I){
+let h='<div class="secao-titulo">⛽ Gasolina</div><div class="tabela"><div class="tabela-scroll">';
+h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
+let cm='',tm=0,R=[];
+I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
+if(cm)R.push({f:true,m:gm(I[I.length-1].d),t:tm});
+R.forEach(r=>{if(r.f){h+=`<div class="tabela-linha fechamento" style="grid-template-columns:100px 1fr 120px 120px 70px"><div></div><div>Fechamento ${r.m.split(' ')[0]}</div><div></div><div class="col-valor">${fm(r.t)}</div><div></div></div>`;}
+else{let pc=r.pg?P[r.pg]:'';let pn=r.pg?PN[r.pg]:'';h+=`<div class="tabela-linha" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>${fd(r.d)}</div><div class="col-desc">${r.desc||''}</div><div class="col-pagamento ${pc}">${pn}</div><div class="col-valor" style="color:#dc2626">${fm(r.v)}</div>${acoesHtml(r.id,'gasolina')}</div>`;}});
+return h+'</div></div>';
+}
+
+function rs(I){
+let h='<div class="secao-titulo">💇 Salão</div><div class="tabela"><div class="tabela-scroll">';
+h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
+let cm='',tm=0,R=[];
+I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
+if(cm)R.push({f:true,m:gm(I[I.length-1].d),t:tm});
+R.forEach(r=>{if(r.f){h+=`<div class="tabela-linha fechamento" style="grid-template-columns:100px 1fr 120px 120px 70px"><div></div><div>Fechamento ${r.m.split(' ')[0]}</div><div></div><div class="col-valor">${fm(r.t)}</div><div></div></div>`;}
+else{let pc=r.pg?P[r.pg]:'';let pn=r.pg?PN[r.pg]:'';h+=`<div class="tabela-linha" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>${fd(r.d)}</div><div class="col-desc">${r.desc}</div><div class="col-pagamento ${pc}">${pn}</div><div class="col-valor" style="color:#dc2626">${fm(r.v)}</div>${acoesHtml(r.id,'salao')}</div>`;}});
+return h+'</div></div>';
+}
+
+function rcf(I){
+let h='<div class="secao-titulo">📋 Contas Fixas</div><div class="tabela"><div class="tabela-scroll">';
+h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>Dia</div><div>Descrição</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
+let cm='',tm=0,R=[];
+I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
+if(cm)R.push({f:true,m:gm(I[I.length-1].d),t:tm});
+R.forEach(r=>{if(r.f){h+=`<div class="tabela-linha fechamento" style="grid-template-columns:100px 1fr 120px 120px 70px"><div></div><div>Total ${r.m.split(' ')[0]}</div><div></div><div class="col-valor">${fm(r.t)}</div><div></div></div>`;}
+else{let pc=r.pg?P[r.pg]:'';let pn=r.pg?PN[r.pg]:'';let ds=r.d.split('-')[2];h+=`<div class="tabela-linha" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>${ds}</div><div class="col-desc">${r.desc}</div><div class="col-pagamento ${pc}">${pn}</div><div class="col-valor" style="color:#dc2626">${r.v===0&&r.obs?r.obs:fm(r.v)}</div>${acoesHtml(r.id,'contas_fixas')}</div>`;}});
+return h+'</div></div>';
+}
+
+function rce(I){
+let h='<div class="secao-titulo">📦 Contas Extras</div><div class="tabela"><div class="tabela-scroll">';
+h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
+let cm='',tm=0,R=[];
+I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
+if(cm)R.push({f:true,m:gm(I[I.length-1].d),t:tm});
+R.forEach(r=>{if(r.f){h+=`<div class="tabela-linha fechamento" style="grid-template-columns:100px 1fr 120px 120px 70px"><div></div><div>Fechamento ${r.m.split(' ')[0]}</div><div></div><div class="col-valor">${fm(r.t)}</div><div></div></div>`;}
+else{let pc=r.pg?P[r.pg]:'';let pn=r.pg?PN[r.pg]:'';h+=`<div class="tabela-linha" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>${fd(r.d)}</div><div class="col-desc">${r.desc||'-'}</div><div class="col-pagamento ${pc}">${pn}</div><div class="col-valor" style="color:#dc2626">${fm(r.v)}</div>${acoesHtml(r.id,'contas_extras')}</div>`;}});
+return h+'</div></div>';
+}
+
+function rfc(I){
+let h='<div class="secao-titulo">💳 Fatura Cartão</div><div class="tabela"><div class="tabela-scroll">';
+h+='<div class="tabela-header" style="grid-template-columns:1fr 80px 120px 120px 70px"><div>Descrição</div><div style="text-align:center">Parcela</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
+let cm='',tm=0,R=[];
+I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
+if(cm)R.push({f:true,m:gm(I[I.length-1].d),t:tm});
+R.forEach(r=>{if(r.f){let pg=r.m.split(' ')[0].toLowerCase();h+=`<div class="tabela-linha fechamento" style="grid-template-columns:1fr 80px 120px 120px 70px"><div>Fechamento ${r.m} (pg ${pg==='abril'?'maio':pg==='maio'?'junho':pg==='junho'?'julho':pg==='julho'?'agosto':pg==='agosto'?'setembro':'out'})</div><div></div><div></div><div class="col-valor">${fm(r.t)}</div><div></div></div>`;}
+else{let pc=r.pg?P[r.pg]:'';let pn=r.pg?PN[r.pg]:'';h+=`<div class="tabela-linha" style="grid-template-columns:1fr 80px 120px 120px 70px"><div class="col-desc">${r.desc}</div><div class="col-parcela">${r.par||''}</div><div class="col-pagamento ${pc}">${pn}</div><div class="col-valor" style="color:#dc2626">${fm(r.v)}</div>${acoesHtml(r.id,'fatura_cartao')}</div>`;}});
+return h+'</div></div>';
+}
+
+function abrirEditar(cat,id,evt){
+  if(evt)evt.stopPropagation();
+  let item=D[cat].find(i=>i.id===id);
+  if(!item){toast('❌ Item não encontrado (ID: '+id+')');return;}
+  editandoId=id;editandoCat=cat;
+  document.getElementById('ed-cat').value=cat;
+  document.getElementById('ed-data').value=item.d;
+  document.getElementById('ed-desc').value=item.desc||'';
+  document.getElementById('ed-parc').value=item.par||'';
+  document.getElementById('ed-valor').value=fm(item.v);
+  document.getElementById('ed-pg').value=item.pg||'';
+  atualizaCorSelect(document.getElementById('ed-pg'));
+  atualizaModalCampos(cat);
+  document.getElementById('modal-overlay').classList.add('ativo');
+}
+
+function atualizaModalCampos(cat){
+  let fdesc=document.getElementById('ed-fdesc'),fpar=document.getElementById('ed-fpar'),fpg=document.getElementById('ed-fpg');
+  if(CATCOMPAR[cat])fpar.classList.remove('hidden');else fpar.classList.add('hidden');
+  if(CATCOMDESC[cat])fdesc.classList.remove('hidden');else fdesc.classList.add('hidden');
+  if(CATCOMPG[cat])fpg.classList.remove('hidden');else fpg.classList.add('hidden');
+}
+
+document.getElementById('ed-cat').addEventListener('change',function(){atualizaModalCampos(this.value);});
+
+function fecharModal(evt){
+  if(evt&&evt.target!==document.getElementById('modal-overlay'))return;
+  document.getElementById('modal-overlay').classList.remove('ativo');
+  editandoId=null;editandoCat=null;
+}
+
+function salvarEdicao(){
+  if(!editandoId||!editandoCat){toast('❌ Nenhum item em edição');return;}
+  let novaCat=document.getElementById('ed-cat').value;
+  let d=document.getElementById('ed-data').value;
+  let desc=document.getElementById('ed-desc').value.trim();
+  let par=document.getElementById('ed-parc').value.trim();
+  let vstr=document.getElementById('ed-valor').value;
+  let pg=document.getElementById('ed-pg').value;
+  if(!d){toast('❌ Informe a data');return;}
+  if(CATCOMDESC[novaCat]&&!desc){toast('❌ Informe a descrição');return;}
+  if(!vstr||pv(vstr)<=0){toast('❌ Informe um valor válido');return;}
+  if(CATCOMPG[novaCat]&&!pg){toast('❌ Selecione a forma de pagamento');return;}
+
+  let idx=D[editandoCat].findIndex(i=>i.id===editandoId);
+  if(idx===-1){toast('❌ Item não encontrado');return;}
+
+  let item=D[editandoCat][idx];
+  item.d=d;item.v=pv(vstr);
+  if(CATCOMDESC[novaCat])item.desc=desc;else delete item.desc;
+  if(CATCOMPAR[novaCat])item.par=par;else delete item.par;
+  if(CATCOMPG[novaCat])item.pg=pg;else delete item.pg;
+
+  if(novaCat!==editandoCat){
+    D[novaCat].push(item);
+    D[editandoCat].splice(idx,1);
+  }
+
+  fecharModal();
+  ct();rt();renderFechamentoMensal();renderGraficos();
+  salvarNoFirebase();
+  toast('✅ Alterações salvas com sucesso!');
+}
+
+function excluir(cat,id,evt){
+  if(evt)evt.stopPropagation();
+  if(!confirm('🗑️ Tem certeza que deseja excluir este lançamento?'))return;
+  let idx=D[cat].findIndex(i=>i.id===id);
+  if(idx>-1){D[cat].splice(idx,1);ct();rt();renderFechamentoMensal();renderGraficos();salvarNoFirebase();toast('🗑️ Excluído com sucesso!');}
+}
+
+function lancar(){
+let d=document.getElementById('fd').value;
+let desc=document.getElementById('fdesc').value.trim();
+let par=document.getElementById('fparc').value.trim();
+let vstr=document.getElementById('fv').value;
+let pg=document.getElementById('fpgm').value;
+if(!d){toast('❌ Informe a data');return;}
+if(T!=='mercado'&&T!=='gasolina'&&!desc){toast('❌ Informe a descrição');return;}
+if(!vstr||pv(vstr)<=0){toast('❌ Informe um valor válido');return;}
+if(T!=='entradas'&&T!=='dizimo'&&!pg){toast('❌ Selecione a forma de pagamento');return;}
+let novo={d:d,v:pv(vstr)};
+if(desc)novo.desc=desc;
+if(par)novo.par=par;
+if(pg)novo.pg=pg;
+novo.id=++N;
+D[T].push(novo);
+rt();ct();renderFechamentoMensal();renderGraficos();
+salvarNoFirebase();
+document.getElementById('fdesc').value='';
+document.getElementById('fv').value='';
+document.getElementById('fparc').value='';
+document.getElementById('fpgm').value='';
+document.getElementById('fpgm').className='';
+toast('✨ Lançado com sucesso!');
+}
+
+function toast(m){
+let t=document.getElementById('toast');
+t.textContent=m;
+t.classList.add('show');
+setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+initFirebase();
+</script>
+</body>
+</html>
