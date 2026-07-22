@@ -1081,7 +1081,7 @@ return h+'</div></div>';
 function acoesHtml(id,cat){return `<div class="col-acoes"><button class="btn-acao btn-editar" onclick="abrirEditar('${cat}',${id},event)" title="Editar">✏️</button><button class="btn-acao btn-excluir" onclick="excluir('${cat}',${id},event)" title="Excluir">🗑️</button></div>`;}
 
 function re(I){
-let cat=getCat('entradas');let h=`<div class="secao-titulo">${cat.emoji||'💰'} ${cat.nome||'Entradas'}</div>`<div class="tabela"><div class="tabela-scroll">';
+let cat=getCat('entradas');let h=`<div class="secao-titulo">${cat.emoji||'💰'} ${cat.nome||'Entradas'}</div><div class="tabela"><div class="tabela-scroll">`;
 h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:right">Valor</div><div></div></div>';
 let cm='',tm=0,R=[];
 I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
@@ -1092,7 +1092,7 @@ return h+'</div></div>';
 }
 
 function rd(I){
-let cat=getCat('dizimo');let h=`<div class="secao-titulo">${cat.emoji||'⛪'} ${cat.nome||'Dízimo'}</div>`<div class="tabela"><div class="tabela-scroll">';
+let cat=getCat('dizimo');let h=`<div class="secao-titulo">${cat.emoji||'⛪'} ${cat.nome||'Dízimo'}</div><div class="tabela"><div class="tabela-scroll">`;
 h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:right">Valor</div><div></div></div>';
 let cm='',tm=0,R=[];
 I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
@@ -1103,7 +1103,7 @@ return h+'</div></div>';
 }
 
 function rm(I){
-let cat=getCat('mercado');let h=`<div class="secao-titulo">${cat.emoji||'🛒'} ${cat.nome||'Mercado'}</div>`<div class="tabela"><div class="tabela-scroll">';
+let cat=getCat('mercado');let h=`<div class="secao-titulo">${cat.emoji||'🛒'} ${cat.nome||'Mercado'}</div><div class="tabela"><div class="tabela-scroll">`;
 h+='<div class="tabela-header" style="grid-template-columns:100px 120px 120px 70px"><div>Data</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
 let cm='',tm=0,R=[];
 I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
@@ -1114,7 +1114,7 @@ return h+'</div></div>';
 }
 
 function rl(I){
-let cat=getCat('lazer');let h=`<div class="secao-titulo">${cat.emoji||'🎉'} ${cat.nome||'Lazer'}</div>`<div class="tabela"><div class="tabela-scroll">';
+let cat=getCat('lazer');let h=`<div class="secao-titulo">${cat.emoji||'🎉'} ${cat.nome||'Lazer'}</div><div class="tabela"><div class="tabela-scroll">`;
 h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:right">Valor</div><div></div></div>';
 let cm='',tm=0,R=[];
 I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
@@ -1125,7 +1125,7 @@ return h+'</div></div>';
 }
 
 function rg(I){
-let cat=getCat('gasolina');let h=`<div class="secao-titulo">${cat.emoji||'⛽'} ${cat.nome||'Gasolina'}</div>`<div class="tabela"><div class="tabela-scroll">';
+let cat=getCat('gasolina');let h=`<div class="secao-titulo">${cat.emoji||'⛽'} ${cat.nome||'Gasolina'}</div><div class="tabela"><div class="tabela-scroll">`;
 h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
 let cm='',tm=0,R=[];
 I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
@@ -1136,7 +1136,7 @@ return h+'</div></div>';
 }
 
 function rs(I){
-let cat=getCat('salao');let h=`<div class="secao-titulo">${cat.emoji||'💇'} ${cat.nome||'Salão'}</div>`<div class="tabela"><div class="tabela-scroll">';
+let cat=getCat('salao');let h=`<div class="secao-titulo">${cat.emoji||'💇'} ${cat.nome||'Salão'}</div><div class="tabela"><div class="tabela-scroll">`;
 h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
 let cm='',tm=0,R=[];
 I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
@@ -1147,7 +1147,7 @@ return h+'</div></div>';
 }
 
 function rcf(I){
-let cat=getCat('contas_fixas');let h=`<div class="secao-titulo">${cat.emoji||'📋'} ${cat.nome||'Fixas'}</div>`<div class="tabela"><div class="tabela-scroll">';
+let cat=getCat('contas_fixas');let h=`<div class="secao-titulo">${cat.emoji||'📋'} ${cat.nome||'Fixas'}</div><div class="tabela"><div class="tabela-scroll">`;
 h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>Dia</div><div>Descrição</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
 let cm='',tm=0,R=[];
 I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
@@ -1158,7 +1158,7 @@ return h+'</div></div>';
 }
 
 function rce(I){
-let cat=getCat('contas_extras');let h=`<div class="secao-titulo">${cat.emoji||'📦'} ${cat.nome||'Extras'}</div>`<div class="tabela"><div class="tabela-scroll">';
+let cat=getCat('contas_extras');let h=`<div class="secao-titulo">${cat.emoji||'📦'} ${cat.nome||'Extras'}</div><div class="tabela"><div class="tabela-scroll">`;
 h+='<div class="tabela-header" style="grid-template-columns:100px 1fr 120px 120px 70px"><div>Data</div><div>Descrição</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
 let cm='',tm=0,R=[];
 I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
@@ -1169,7 +1169,7 @@ return h+'</div></div>';
 }
 
 function rfc(I){
-let cat=getCat('fatura_cartao');let h=`<div class="secao-titulo">${cat.emoji||'💳'} ${cat.nome||'Fatura Cartão'}</div>`<div class="tabela"><div class="tabela-scroll">';
+let cat=getCat('fatura_cartao');let h=`<div class="secao-titulo">${cat.emoji||'💳'} ${cat.nome||'Fatura Cartão'}</div><div class="tabela"><div class="tabela-scroll">`;
 h+='<div class="tabela-header" style="grid-template-columns:1fr 80px 120px 120px 70px"><div>Descrição</div><div style="text-align:center">Parcela</div><div style="text-align:center">Pagamento</div><div style="text-align:right">Valor</div><div></div></div>';
 let cm='',tm=0,R=[];
 I.forEach(i=>{let k=gk(i.d);if(k!==cm&&cm!==''){R.push({f:true,m:gm(I.find(x=>gk(x.d)===cm)?.d||i.d),t:tm});tm=0;}cm=k;tm+=i.v;R.push({...i,f:false});});
