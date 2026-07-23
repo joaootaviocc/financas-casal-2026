@@ -263,29 +263,10 @@ header p{color:#9ca3af;font-size:14px;margin-top:4px}
 
 <div class="legenda">
 <div class="legenda-titulo">📌 Legenda - Formas de Pagamento</div>
-<div class="legenda-itens">
-<div class="legenda-item"><span class="legenda-dot" style="background:#be185d"></span>cartão lê</div>
-<div class="legenda-item"><span class="legenda-dot" style="background:#2563eb"></span>cartão joão</div>
-<div class="legenda-item"><span class="legenda-dot" style="background:#d97706"></span>cartão virtual</div>
-<div class="legenda-item"><span class="legenda-dot" style="background:#059669"></span>pix</div>
-<div class="legenda-item"><span class="legenda-dot" style="background:#7c3aed"></span>ifood benefícios</div>
-<div class="legenda-item"><span class="legenda-dot" style="background:#4b5563"></span>boleto/débito</div>
-<div class="legenda-item"><span class="legenda-dot" style="background:#0891b2"></span>mercado pago</div>
-<div class="legenda-item"><span class="legenda-dot" style="background:#ea580c"></span>dinheiro</div>
-</div>
+<div class="legenda-itens" id="legenda-pagamentos"></div>
 </div>
 
-<div class="tabs">
-<button class="tab active" onclick="sw('entradas',this)">💰 Entradas</button>
-<button class="tab" onclick="sw('dizimo',this)">⛪ Dízimo</button>
-<button class="tab" onclick="sw('mercado',this)">🛒 Mercado</button>
-<button class="tab" onclick="sw('lazer',this)">🎉 Lazer</button>
-<button class="tab" onclick="sw('gasolina',this)">⛽ Gasolina</button>
-<button class="tab" onclick="sw('salao',this)">💇 Salão</button>
-<button class="tab" onclick="sw('contas_fixas',this)">📋 Fixas</button>
-<button class="tab" onclick="sw('contas_extras',this)">📦 Extras</button>
-<button class="tab" onclick="sw('fatura_cartao',this)">💳 Fatura</button>
-</div>
+<div class="tabs" id="tabs-container"></div>
 
 <div class="form">
 <div class="form-titulo">➕ Novo Lançamento</div>
@@ -1219,9 +1200,9 @@ function salvarEdicao(){
   let vstr=document.getElementById('ed-valor').value;
   let pg=document.getElementById('ed-pg').value;
   if(!d){toast('❌ Informe a data');return;}
-  if(CATCOMDESC[novaCat]&&!desc){toast('❌ Informe a descrição');return;}
+  if(temDesc(novaCat)&&!desc){toast('❌ Informe a descrição');return;}
   if(!vstr||pv(vstr)<=0){toast('❌ Informe um valor válido');return;}
-  if(CATCOMPG[novaCat]&&!pg){toast('❌ Selecione a forma de pagamento');return;}
+  if(temPg(novaCat)&&!pg){toast('❌ Selecione a forma de pagamento');return;}
 
   let idx=D[editandoCat].findIndex(i=>i.id===editandoId);
   if(idx===-1){toast('❌ Item não encontrado');return;}
